@@ -24,8 +24,6 @@ type Key struct {
 }
 
 func main(){
-	defer logFile.Close()
-	Logger.Println("test")
 	// Setup channels
 	//// From main To keyHandler
 	keyChannel := make(chan Key)
@@ -108,12 +106,24 @@ func initThreadKeyHandler(keyChannel chan Key, dataChannel chan *Data, renderCha
 		case keyStruct.key == Kb.KeyBackspace2:
 			if(len(data.keyword)>0){
 				data.keyword = data.keyword[:len(data.keyword)-1]
-				data.filteredList = data.fileExplorer.SearchInPath(data.keyword)
+				newEntries := data.fileExplorer.SearchInPath(data.keyword)
+				data.filteredList = newEntries
+				if len(newEntries)==0{
+					data.selectedIndex = -1
+				} else {
+					data.selectedIndex = 0
+				}
 			}
 			renderChannel <- true
 		case keyStruct.key == Kb.KeySpace:
 			data.keyword += " "
-			data.filteredList = data.fileExplorer.SearchInPath(data.keyword)
+			newEntries := data.fileExplorer.SearchInPath(data.keyword)
+			data.filteredList = newEntries
+			if len(newEntries)==0{
+				data.selectedIndex = -1
+			} else {
+				data.selectedIndex = 0
+			}
 			renderChannel <- true
 		case keyStruct.key == Kb.KeyArrowUp:
 			if(data.selectedIndex > 0){
@@ -147,7 +157,13 @@ func initThreadKeyHandler(keyChannel chan Key, dataChannel chan *Data, renderCha
 			renderChannel <- false
 		default:
 			data.keyword += string(keyStruct.char)
-			data.filteredList = data.fileExplorer.SearchInPath(data.keyword)
+			newEntries := data.fileExplorer.SearchInPath(data.keyword)
+				data.filteredList = newEntries
+				if len(newEntries)==0{
+					data.selectedIndex = -1
+				} else {
+					data.selectedIndex = 0
+				}
 			renderChannel <- true
 		}
 	}
