@@ -24,7 +24,8 @@ type Key struct {
 }
 
 func main(){
-
+	defer logFile.Close()
+	Logger.Println("test")
 	// Setup channels
 	//// From main To keyHandler
 	keyChannel := make(chan Key)
