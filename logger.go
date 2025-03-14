@@ -12,7 +12,7 @@ var err error
 var Logger *log.Logger
 
 func init(){
-	logFile, err = os.OpenFile("logs.txt", os.O_RDWR | os.O_APPEND, 0600)
+	logFile, err = os.OpenFile("logs.log", os.O_RDWR | os.O_APPEND, 0600)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
