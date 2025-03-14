@@ -1,7 +1,6 @@
 package file_explorer
 
 import (
-	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -9,8 +8,8 @@ import (
 )
 
 type FileExplorer struct {
-	currentPath string
-	dirEntries []fs.DirEntry
+	CurrentPath string
+	DirEntries []fs.DirEntry
 }
 
 func NewFileExplorer() (FileExplorer, error){
@@ -19,26 +18,26 @@ func NewFileExplorer() (FileExplorer, error){
 	if err != nil {
 		return f, err
 	}
-	f.currentPath = currentPath
+	f.CurrentPath = currentPath
 	dirEntries, err := os.ReadDir(currentPath)
 	if err != nil {
 		return f, err
 	}
-	f.dirEntries = dirEntries
+	f.DirEntries = dirEntries
 	return f, nil
 }
 
-func (fe FileExplorer) GetCurrentPath() string{
-	return fe.currentPath
+func (fe *FileExplorer) GetCurrentPath() string{
+	return fe.CurrentPath
 }
 
-func (fe FileExplorer) GetDirectoryEntries() []fs.DirEntry{
-	return fe.dirEntries
+func (fe *FileExplorer) GetDirectoryEntries() []fs.DirEntry{
+	return fe.DirEntries
 }
 
-func (fe FileExplorer) SearchInPath(keyword string) []fs.DirEntry{
+func (fe *FileExplorer) SearchInPath(keyword string) []fs.DirEntry{
 	var ret []fs.DirEntry
-	for _, entry := range fe.dirEntries {
+	for _, entry := range fe.DirEntries {
 		if strings.Contains(entry.Name(), keyword) {
 			ret = append(ret, entry)
 		}
@@ -51,12 +50,15 @@ func (fe *FileExplorer) ChangeDirectory(dir string) error{
 	if err != nil {
 		return err
 	}
-	fe.currentPath = absolutePath
+	err = os.Chdir(absolutePath)
+	if err != nil {
+		return err
+	}
+	fe.CurrentPath = absolutePath
 	dirEntries, err := os.ReadDir(absolutePath)
 	if err != nil {
 		return err
 	}
-	fmt.Println("abs path:", absolutePath)
-	fe.dirEntries = dirEntries
+	fe.DirEntries = dirEntries
 	return nil
 }
