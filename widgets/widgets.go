@@ -31,7 +31,6 @@ func (fv FileViewer) Render(out io.Writer, de []fs.DirEntry, selectedIndex int){
 	if selectedIndex < 0 || selectedIndex >= len(de) {
 		return
 	}
-	fmt.Fprintf(out, "   Seleccionado: %s\n", de[selectedIndex].Name())
 	for index, dirEntry := range de{
 		fmt.Fprintf(out, "  ")
 		if(index==selectedIndex){

@@ -50,20 +50,22 @@ func main(){
 	var entriesViewer Widgets.FileViewer
 	searchBar.Render(out, "")
 	entriesViewer.Render(out, fe.GetDirectoryEntries(), 0)
-
+	fmt.Fprintf(out,Widgets.INVISIBLE)
+	
 	// Render initial widgets
 	render(searchBar, entriesViewer, out, data)
-
+	
 	// Init thread
 	go initThreadKeyHandler(keyChannel, dataChannel, renderChannel)
-
+	
 	// Setup keyboard listener
 	if err := Kb.Open(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 	defer Kb.Close()
-
+	
+	
 	LOOP:
 	for {
 		char, key, err := Kb.GetKey()
@@ -72,32 +74,36 @@ func main(){
 			os.Exit(1)
 		}
 		
-		if(key == Kb.KeyCtrlC){
+		if(key == Kb.KeyEsc){
 			break LOOP
-		} 
-		keyChannel <- Key{key: key, char: char}
-		dataChannel <- data
-		shouldRender := <- renderChannel
-		if shouldRender {
-			render(searchBar, entriesViewer, out, data)
+			} 
+			keyChannel <- Key{key: key, char: char}
+			dataChannel <- data
+			shouldRender := <- renderChannel
+			if shouldRender {
+				render(searchBar, entriesViewer, out, data)
+				os.Chdir(data.fileExplorer.CurrentPath)
+			}
 		}
-	}
-
-
+		
 	close(keyChannel)
 	close(dataChannel)
 	close(renderChannel)
+	fmt.Fprintf(out,"\n%s %s \x1b[H\x1b[2J\x1b[0m", Widgets.VISIBLE, Widgets.RESET_TEXT)
+	fmt.Fprintf(out, "%s", data.fileExplorer.CurrentPath)
+	defer out.Close()
 }
 
-func initThreadKeyHandler(keyChannel chan Key, dataChannel chan *Data, renderChannel chan bool){
+func initThreadKeyHandler(keyChannel chan Key, dataChannel chan *Data, renderChannel chan bool) {
 	for {
 		var keyStruct Key = <- keyChannel
 		var data *Data = <- dataChannel
-
+		if(data==nil){
+			continue
+		}
 		switch {
-		case keyStruct.key == Kb.KeyCtrlC:
-			renderChannel <- false
-			break
+		case keyStruct.key == Kb.KeyEsc:
+			return
 		case keyStruct.key == Kb.KeyBackspace2:
 			if(len(data.keyword)>0){
 				data.keyword = data.keyword[:len(data.keyword)-1]
@@ -130,8 +136,10 @@ func initThreadKeyHandler(keyChannel chan Key, dataChannel chan *Data, renderCha
 					data.selectedIndex = 0
 				}
 				data.filteredList = newEntries
+				renderChannel <- true
+			} else {
+				renderChannel <- false
 			}
-			renderChannel <- true
 		case keyStruct.key == Kb.KeyArrowLeft:
 			renderChannel <- false
 		case keyStruct.key == Kb.KeyArrowRight:
