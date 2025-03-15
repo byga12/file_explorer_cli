@@ -30,6 +30,7 @@ func main(){
 	dataChannel := make(chan *Data)
 	//// From keyHandler To main
 	renderChannel := make(chan bool)
+
 	// Setup Data
 	fe, err := Fe.NewFileExplorer()
 	if err != nil {
@@ -47,12 +48,15 @@ func main(){
 	out := os.Stdout
 	var searchBar Widgets.SearchBar
 	var entriesViewer Widgets.FileViewer
+	var keyboardHelp Widgets.KeyBoardHelp
 	searchBar.Render(out, "")
 	entriesViewer.Render(out, fe.GetDirectoryEntries(), 0)
+	keyboardHelp.Render(out)
 	fmt.Fprintf(out,Widgets.INVISIBLE)
+	fmt.Fprintf(out,"\x1b[H\x1b[J")
 	
 	// Render initial widgets
-	render(searchBar, entriesViewer, out, data)
+	render(searchBar, entriesViewer, keyboardHelp, out, data)
 	
 	// Init thread
 	go initThreadKeyHandler(keyChannel, dataChannel, renderChannel)
@@ -80,7 +84,7 @@ func main(){
 			dataChannel <- data
 			shouldRender := <- renderChannel
 			if shouldRender {
-				render(searchBar, entriesViewer, out, data)
+				render(searchBar, entriesViewer, keyboardHelp, out, data)
 				os.Chdir(data.fileExplorer.CurrentPath)
 			}
 		}
@@ -106,36 +110,29 @@ func initThreadKeyHandler(keyChannel chan Key, dataChannel chan *Data, renderCha
 		case keyStruct.key == Kb.KeyBackspace2:
 			if(len(data.keyword)>0){
 				data.keyword = data.keyword[:len(data.keyword)-1]
-				newEntries := data.fileExplorer.SearchInPath(data.keyword)
-				data.filteredList = newEntries
-				if len(newEntries)==0{
-					data.selectedIndex = -1
-				} else {
-					data.selectedIndex = 0
-				}
+				updateEntries(data)
+				renderChannel <- true
+			} else {
+				renderChannel <- false
 			}
-			renderChannel <- true
 		case keyStruct.key == Kb.KeySpace:
 			data.keyword += " "
-			newEntries := data.fileExplorer.SearchInPath(data.keyword)
-			data.filteredList = newEntries
-			if len(newEntries)==0{
-				data.selectedIndex = -1
-			} else {
-				data.selectedIndex = 0
-			}
+			updateEntries(data)
 			renderChannel <- true
 		case keyStruct.key == Kb.KeyArrowUp:
 			if(data.selectedIndex > 0){
 				data.selectedIndex--
+				renderChannel <- true
+			} else {
+				renderChannel <- false
 			}
-			renderChannel <- true
-
 		case keyStruct.key == Kb.KeyArrowDown:
 			if(data.selectedIndex <= len(data.filteredList)-2){
 				data.selectedIndex++
+				renderChannel <- true
+			} else {
+				renderChannel <- false
 			}
-			renderChannel <- true
 		case keyStruct.key == Kb.KeyEnter:
 			if(data.filteredList[data.selectedIndex].IsDir()){
 				data.fileExplorer.ChangeDirectory(data.filteredList[data.selectedIndex].Name())
@@ -152,27 +149,39 @@ func initThreadKeyHandler(keyChannel chan Key, dataChannel chan *Data, renderCha
 				renderChannel <- false
 			}
 		case keyStruct.key == Kb.KeyArrowLeft:
-			renderChannel <- false
+			data.fileExplorer.ChangeDirectory("..")
+			data.keyword = ""
+			newEntries := data.fileExplorer.GetDirectoryEntries()
+			data.selectedIndex = 0
+			data.filteredList = newEntries
+			renderChannel <- true
 		case keyStruct.key == Kb.KeyArrowRight:
 			renderChannel <- false
 		default:
 			data.keyword += string(keyStruct.char)
-			newEntries := data.fileExplorer.SearchInPath(data.keyword)
-				data.filteredList = newEntries
-				if len(newEntries)==0{
-					data.selectedIndex = -1
-				} else {
-					data.selectedIndex = 0
-				}
+			updateEntries(data)
 			renderChannel <- true
 		}
 	}
 }
 
-func render(searchBar Widgets.SearchBar, entriesViewer Widgets.FileViewer, out io.Writer, data *Data){
-	fmt.Fprintf(out,"\x1b[H\x1b[2J")
-	
+func updateEntries(data *Data){
+	newEntries := data.fileExplorer.SearchInPath(data.keyword)
+	data.filteredList = newEntries
+	if len(newEntries)==0{
+		data.selectedIndex = -1
+	} else {
+		data.selectedIndex = 0
+	}
+}
+
+func render(searchBar Widgets.SearchBar, entriesViewer Widgets.FileViewer, keyboardHelp Widgets.KeyBoardHelp, out io.Writer, data *Data){
+	fmt.Fprintf(out, "\x1b[H\x1b[J\x1b[H%s", Widgets.CURSOR_DOWN(1))
 	searchBar.Render(out, data.keyword)
 	fmt.Fprintf(out, "\n")
+	fmt.Fprintf(out, "    %s%s%s%s\n",Widgets.GREEN_TEXT, Widgets.BOLD_TEXT, data.fileExplorer.CurrentPath, Widgets.RESET_TEXT)
 	entriesViewer.Render(out, data.filteredList, data.selectedIndex)
+	fmt.Fprintf(out,"%s%s%s%s", Widgets.CURSOR_DOWN(1000), Widgets.CURSOR_LEFT(100), Widgets.CURSOR_UP(1), Widgets.CURSOR_RIGHT(3) )
+	keyboardHelp.Render(out)
+
 }
