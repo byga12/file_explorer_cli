@@ -24,12 +24,6 @@ type Key struct {
 }
 
 func main(){
-	// Setup channels
-	//// From main To keyHandler
-	keyChannel := make(chan Key)
-	dataChannel := make(chan *Data)
-	//// From keyHandler To main
-	renderChannel := make(chan bool)
 
 	// Setup Data
 	fe, err := Fe.NewFileExplorer()
@@ -58,16 +52,29 @@ func main(){
 	// Render initial widgets
 	render(searchBar, entriesViewer, keyboardHelp, out, data)
 	
-	// Init thread
-	go initThreadKeyHandler(keyChannel, dataChannel, renderChannel)
-	
 	// Setup keyboard listener
 	if err := Kb.Open(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 	defer Kb.Close()
-	
+
+	// Setup path output file
+	outputFile, err := os.Create("/tmp/file_explorer_cli_path.txt")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	defer outputFile.Close()
+	// Setup channels
+	//// From main To keyHandler
+	keyChannel := make(chan Key)
+	dataChannel := make(chan *Data)
+	//// From keyHandler To main
+	renderChannel := make(chan bool)
+
+	// Init thread
+	go initThreadKeyHandler(keyChannel, dataChannel, renderChannel)
 	
 	LOOP:
 	for {
@@ -93,7 +100,7 @@ func main(){
 	close(dataChannel)
 	close(renderChannel)
 	fmt.Fprintf(out,"\n%s %s \x1b[H\x1b[2J\x1b[0m", Widgets.VISIBLE, Widgets.RESET_TEXT)
-	fmt.Fprintf(out, "%s", data.fileExplorer.CurrentPath)
+	outputFile.WriteString(data.fileExplorer.GetCurrentPath())
 	defer out.Close()
 }
 
