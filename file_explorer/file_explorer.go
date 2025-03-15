@@ -5,8 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	// Log "github.com/byga12/file_explorer_cli/logger"
-
 )
 
 type FileExplorer struct {
