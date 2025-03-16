@@ -2,9 +2,11 @@
 
 Utilidad de línea de comandos para navegar carpetas a través de una interfaz interactiva.
 
-![](README_media/file_explorer_cli.gif "demo")
+<img src="README_media/file_explorer_cli.gif" alt="drawing" width="500"/>
 
-Librerías utilizadas: 
+Lenguaje: Go
+
+Librerías utilizadas:
 
 - https://github.com/eiannone/keyboard Para capturar eventos de Keypress desde la terminal.
 
@@ -52,3 +54,9 @@ Reiniciar la terminal y probar el alias
 ```bash
 fe
 ```
+
+---
+
+
+
+Cualquier sugerencia/corrección es bienvenida!
